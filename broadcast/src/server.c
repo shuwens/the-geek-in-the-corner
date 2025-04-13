@@ -4,7 +4,7 @@
 #include "common.h"
 #include "messages.h"
 
-#define MAX_FILE_NAME 256
+#define MAX_SERVER_NAME 16
 
 struct conn_context {
   char *buffer;
@@ -13,8 +13,8 @@ struct conn_context {
   struct message *msg;
   struct ibv_mr *msg_mr;
 
-  int fd;
-  char file_name[MAX_FILE_NAME];
+  // int fd;
+  char server_name[MAX_SERVER_NAME];
 };
 
 static void send_message(struct rdma_cm_id *id) {
@@ -56,7 +56,7 @@ static void on_pre_conn(struct rdma_cm_id *id) {
 
   id->context = ctx;
 
-  ctx->file_name[0] = '\0'; // take this to mean we don't have the file name
+  ctx->server_name[0] = '\0'; // take this to mean we don't have the file name
 
   posix_memalign((void **)&ctx->buffer, sysconf(_SC_PAGESIZE), BUFFER_SIZE);
   TEST_Z(ctx->buffer_mr =
@@ -92,15 +92,18 @@ static void on_completion(struct ibv_wc *wc) {
 
       // don't need post_receive() since we're done with this connection
 
-    } else if (ctx->file_name[0]) {
-      ssize_t ret;
+    } else if (ctx->server_name[0]) {
+      // ssize_t ret;
 
       printf("received %i bytes.\n", size);
 
-      ret = write(ctx->fd, ctx->buffer, size);
+      char hash[16];
+      strcpy(hash, ctx->buffer);
+      printf("opening file %s\n", ctx->buffer);
+      printf("opening hash %s\n", hash);
 
-      if (ret != size)
-        rc_die("write() failed");
+      // if (ret != size)
+      //   rc_die("write() failed");
 
       post_receive(id);
 
@@ -108,17 +111,15 @@ static void on_completion(struct ibv_wc *wc) {
       send_message(id);
 
     } else {
-      size = (size > MAX_FILE_NAME) ? MAX_FILE_NAME : size;
-      memcpy(ctx->file_name, ctx->buffer, size);
-      ctx->file_name[size - 1] = '\0';
+      // size = (size > MAX_FILE_NAME) ? MAX_FILE_NAME : size;
+      memcpy(ctx->server_name, ctx->buffer, 16);
+      ctx->server_name[size - 1] = '\0';
 
-      printf("opening file %s\n", ctx->file_name);
+      // ctx->fd = open(ctx->file_name, O_WRONLY | O_CREAT | O_EXCL,
+      //                S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 
-      ctx->fd = open(ctx->file_name, O_WRONLY | O_CREAT | O_EXCL,
-                     S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-
-      if (ctx->fd == -1)
-        rc_die("open() failed");
+      // if (ctx->fd == -1)
+      //   rc_die("open() failed");
 
       post_receive(id);
 
@@ -131,7 +132,7 @@ static void on_completion(struct ibv_wc *wc) {
 static void on_disconnect(struct rdma_cm_id *id) {
   struct conn_context *ctx = (struct conn_context *)id->context;
 
-  close(ctx->fd);
+  // close(ctx->fd);
 
   ibv_dereg_mr(ctx->buffer_mr);
   ibv_dereg_mr(ctx->msg_mr);
@@ -139,7 +140,7 @@ static void on_disconnect(struct rdma_cm_id *id) {
   free(ctx->buffer);
   free(ctx->msg);
 
-  printf("finished transferring %s\n", ctx->file_name);
+  printf("finished transferring %s\n", ctx->server_name);
 
   free(ctx);
 }

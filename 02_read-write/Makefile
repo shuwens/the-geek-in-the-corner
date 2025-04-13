@@ -7,6 +7,7 @@ LDLIBS  := ${LDLIBS} -lrdmacm -libverbs -lpthread
 APPS    := rdma-client rdma-server
 
 all: ${APPS}
+	rm -f *.o
 
 rdma-client: rdma-common.o rdma-client.o
 	${LD} -o $@ $^ ${LDLIBS}

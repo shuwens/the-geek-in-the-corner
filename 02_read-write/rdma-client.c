@@ -9,11 +9,10 @@ static int on_event(struct rdma_cm_event *event);
 static int on_route_resolved(struct rdma_cm_id *id);
 static void usage(const char *argv0);
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
   struct addrinfo *addr;
   struct rdma_cm_event *event = NULL;
-  struct rdma_cm_id *conn= NULL;
+  struct rdma_cm_id *conn = NULL;
   struct rdma_event_channel *ec = NULL;
 
   if (argc != 4)
@@ -49,35 +48,33 @@ int main(int argc, char **argv)
   return 0;
 }
 
-int on_addr_resolved(struct rdma_cm_id *id)
-{
+int on_addr_resolved(struct rdma_cm_id *id) {
   printf("address resolved.\n");
 
   build_connection(id);
-  sprintf(get_local_message_region(id->context), "message from active/client side with pid %d", getpid());
+  // sprintf(get_local_message_region(id->context), "message from active/client
+  // side with pid %d", getpid());
+  sprintf(get_local_message_region(id->context), "fuck this shit");
   TEST_NZ(rdma_resolve_route(id, TIMEOUT_IN_MS));
 
   return 0;
 }
 
-int on_connection(struct rdma_cm_id *id)
-{
+int on_connection(struct rdma_cm_id *id) {
   on_connect(id->context);
   send_mr(id->context);
 
   return 0;
 }
 
-int on_disconnect(struct rdma_cm_id *id)
-{
+int on_disconnect(struct rdma_cm_id *id) {
   printf("disconnected.\n");
 
   destroy_connection(id->context);
   return 1; /* exit event loop */
 }
 
-int on_event(struct rdma_cm_event *event)
-{
+int on_event(struct rdma_cm_event *event) {
   int r = 0;
 
   if (event->event == RDMA_CM_EVENT_ADDR_RESOLVED)
@@ -96,8 +93,7 @@ int on_event(struct rdma_cm_event *event)
   return r;
 }
 
-int on_route_resolved(struct rdma_cm_id *id)
-{
+int on_route_resolved(struct rdma_cm_id *id) {
   struct rdma_conn_param cm_params;
 
   printf("route resolved.\n");
@@ -107,8 +103,10 @@ int on_route_resolved(struct rdma_cm_id *id)
   return 0;
 }
 
-void usage(const char *argv0)
-{
-  fprintf(stderr, "usage: %s <mode> <server-address> <server-port>\n  mode = \"read\", \"write\"\n", argv0);
+void usage(const char *argv0) {
+  fprintf(stderr,
+          "usage: %s <mode> <server-address> <server-port>\n  mode = \"read\", "
+          "\"write\"\n",
+          argv0);
   exit(1);
 }
